@@ -1,0 +1,4 @@
+# Lets LabDeck talk to Stream Deck devices without administrator rights.
+# Copy this file into /etc/udev/rules.d/, reload the udev rules, then replug the Stream Deck.
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0fd9", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="0fd9", TAG+="uaccess"

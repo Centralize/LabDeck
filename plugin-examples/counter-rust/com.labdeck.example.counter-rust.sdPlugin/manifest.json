@@ -1,0 +1,19 @@
+{
+  "UUID": "com.labdeck.example.counter-rust",
+  "Name": "Counter (Rust)",
+  "Version": "1.0.0",
+  "Author": "LabDeck example",
+  "Description": "Each press adds one. The count is saved on the key.",
+  "CodePathWin": "counter-rust.exe",
+  "CodePathMac": "counter-rust",
+  "CodePathLin": "counter-rust",
+  "Category": "Counter (Rust)",
+  "Actions": [
+    {
+      "UUID": "com.labdeck.example.counter-rust.count",
+      "Name": "Counter",
+      "Tooltip": "Each press adds one",
+      "States": [{ "Title": "0" }]
+    }
+  ]
+}

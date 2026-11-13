@@ -1,0 +1,17 @@
+{
+  "UUID": "com.labdeck.example.counter-lua",
+  "Name": "Counter (Lua)",
+  "Version": "1.0.0",
+  "Author": "LabDeck example",
+  "Description": "Each press adds one. The count is saved on the key.",
+  "CodePath": "main.lua",
+  "Category": "Counter (Lua)",
+  "Actions": [
+    {
+      "UUID": "com.labdeck.example.counter-lua.count",
+      "Name": "Counter",
+      "Tooltip": "Each press adds one",
+      "States": [{ "Title": "0" }]
+    }
+  ]
+}

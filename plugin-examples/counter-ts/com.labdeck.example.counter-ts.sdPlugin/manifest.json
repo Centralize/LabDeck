@@ -1,0 +1,17 @@
+{
+  "UUID": "com.labdeck.example.counter-ts",
+  "Name": "Counter (TypeScript)",
+  "Version": "1.0.0",
+  "Author": "LabDeck example",
+  "Description": "Each press adds one. The count is saved on the key.",
+  "CodePath": "plugin.ts",
+  "Category": "Counter (TypeScript)",
+  "Actions": [
+    {
+      "UUID": "com.labdeck.example.counter-ts.count",
+      "Name": "Counter",
+      "Tooltip": "Each press adds one",
+      "States": [{ "Title": "0" }]
+    }
+  ]
+}

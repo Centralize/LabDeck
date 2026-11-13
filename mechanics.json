@@ -1,0 +1,491 @@
+{
+  "version": 1,
+  "values": [
+    {"name": "picture types accepted on drop", "group": "controls", "value": "png, jpg, jpeg, gif, bmp, webp, ico", "estimated": true},
+    {"name": "hotkey press order", "group": "actions", "value": "modifiers down, then key down", "source": "function 0x1402bc670"},
+    {"name": "hotkey release order", "group": "actions", "value": "key up, then modifiers up", "source": "function 0x1402bc710"},
+    {"name": "hotkey held while key held", "group": "actions", "value": true, "source": "functions 0x1402bc670 / 0x1402bc620 (newer build: 0x1402c1540 / 0x1402c15f0)"},
+    {"name": "hotkey repeats while held", "group": "actions", "value": "key down again, modifiers untouched", "source": "functions 0x1402c12b0 / 0x14077e360 / 0x140780600"},
+    {"name": "multimedia key held while key held", "group": "actions", "value": true, "source": "functions 0x1402d20c0 / 0x1402d2150"},
+    {"name": "multimedia repeats while held", "group": "actions", "value": "key down again", "source": "functions 0x1402d1f70 / 0x140780600"},
+    {"name": "key repeat first wait base", "group": "actions", "value": 250, "unit": "ms", "source": "functions 0x1402c6d90 / 0x1402c1230"},
+    {"name": "key repeat first wait per keyboard delay step", "group": "actions", "value": 250, "unit": "ms", "source": "functions 0x1402c6d90 / 0x1402c1230 (-750.0 / 3.0 at 0x1416df900 / 0x1416df6d8)"},
+    {"name": "key repeat first wait fallback", "group": "actions", "value": 500, "unit": "ms", "source": "functions 0x1402c6d90 / 0x1402c1230"},
+    {"name": "key repeat interval", "group": "actions", "value": "1000 / (keyboard speed * 27.5 / 31 + 2.5) ms", "source": "functions 0x1402c6e10 / 0x1402c12b0 / 0x1402d1f70 (constants 0x1416df818, 0x1416df770, 0x1416df780, 0x1416df6d0)"},
+    {"name": "key repeat interval fallback", "group": "actions", "value": 100, "unit": "ms", "source": "functions 0x1402c6e10 / 0x1402c12b0 / 0x1402d1f70"},
+    {"name": "key repeat settings read from", "group": "actions", "value": "SPI_GETKEYBOARDDELAY (0x16), SPI_GETKEYBOARDSPEED (0x0A)", "source": "functions 0x1402c6d90 / 0x1402c6e10"},
+    {"name": "modifier bit KeyShift", "group": "actions", "value": 1, "source": "function 0x1402bbaa0"},
+    {"name": "modifier bit KeyCtrl", "group": "actions", "value": 2, "source": "function 0x1402bbaa0"},
+    {"name": "modifier bit KeyOption", "group": "actions", "value": 4, "source": "function 0x1402bbaa0"},
+    {"name": "modifier bit KeyCmd", "group": "actions", "value": 8, "source": "function 0x1402bbaa0"},
+    {"name": "timed hotkey default hold", "group": "actions", "value": 100, "unit": "ms", "estimated": true},
+    {"name": "timed hotkey shortest hold", "group": "actions", "value": 50, "unit": "ms", "estimated": true},
+    {"name": "shortest key hold", "group": "actions", "value": 50, "unit": "ms", "estimated": true},
+    {"name": "hotkeys sent as", "group": "actions", "value": "hardware scan codes (KEYEVENTF_SCANCODE), extended flag for E0 keys", "estimated": true},
+    {"name": "reference sends ordinary keys as", "group": "actions", "value": "virtual-key code plus scan code (MapVirtualKey)", "source": "functions 0x140780600 / 0x1407818e0"},
+    {"name": "reference sends E0 keys as", "group": "actions", "value": "scan code with extended flag, virtual-key code 0", "source": "functions 0x140780600 / 0x1407818e0"},
+    {"name": "media keys sent as", "group": "actions", "value": "scan code with extended flag (MAPVK_VK_TO_VSC_EX)", "source": "functions 0x140780a00 / 0x1407818e0"},
+    {"name": "modifier order on key down", "group": "actions", "value": "Shift, Ctrl, Alt, Win (mask bit 0 upward)", "source": "function 0x1407807c0"},
+    {"name": "modifier order on key up", "group": "actions", "value": "Win, Alt, Ctrl, Shift (top bit downward)", "source": "function 0x1407807c0"},
+    {"name": "modifiers sent", "group": "actions", "value": "together in one SendInput, the key in its own", "source": "functions 0x14077e2e0 / 0x1407807c0 / 0x140780600"},
+    {"name": "key up with the repeat flag", "group": "actions", "value": "not sent", "source": "function 0x140780600"},
+    {"name": "programs run as administrator reached by", "group": "actions", "value": "a separate helper with UI-access rights", "source": "function 0x140599d90"},
+    {"name": "deck hotkeys pressed by", "group": "actions", "value": "the device thread, without waiting for the window", "estimated": true},
+    {"name": "copies that drive the deck", "group": "device", "value": "one (the holder of LabDeck.lock)", "estimated": true},
+    {"name": "second copy", "group": "device", "value": "window only: no deck, plugins, tray or saving", "estimated": true},
+    {"name": "deck redrawn in full when", "group": "device", "value": "it connects, and when the window is opened from the tray", "estimated": true},
+    {"name": "hidden window looks every", "group": "window", "value": 100, "unit": "ms", "source": "eframe 0.37 INVISIBLE_WINDOW_REPAINT_INTERVAL"},
+    {"name": "key menu order", "group": "controls", "value": "Copy, Paste, Create Folder, Move to Folder, Create Multi Action, Move to Multi Action, Delete, Trigger Action", "source": "function 0x140862d20"},
+    {"name": "empty key menu default", "group": "controls", "value": "Create Folder", "estimated": true},
+    {"name": "key menu Move to Folder", "group": "controls", "value": "flag bit 4", "source": "function 0x140862d20"},
+    {"name": "key menu Move to Multi Action", "group": "controls", "value": "flag bit 6", "source": "function 0x140862d20"},
+    {"name": "moved key position in new folder", "group": "controls", "value": "same position; first free if in the back-key corner", "estimated": true},
+    {"name": "moved key in new Multi Action", "group": "controls", "value": "first step", "estimated": true},
+    {"name": "favicon rel order", "group": "website icon", "value": "apple-touch-icon, apple-touch-icon-precomposed, icon, shortcut icon", "source": "function 0x140377810"},
+    {"name": "favicon fallback", "group": "website icon", "value": "https://<host>/favicon.ico", "source": "function 0x140377f30"},
+    {"name": "favicon wanted size", "group": "website icon", "value": 72, "unit": "px", "estimated": true},
+    {"name": "website key picture size", "group": "website icon", "value": 144, "unit": "px", "estimated": true},
+    {"name": "icon fill on see-through", "group": "website icon", "value": 0.62, "estimated": true},
+    {"name": "dark icon brightness limit", "group": "website icon", "value": 0.3, "estimated": true},
+    {"name": "System group order", "group": "actions list", "value": "Website, Hotkey Switch, Hotkey, Open, Open Application, Close, Text, Multimedia", "source": "function 0x14021dfe0"},
+    {"name": "Stream Deck group order", "group": "actions list", "value": "Timer, Brightness, Sleep, Action Bar, Toggle Virtual Stream Deck", "source": "function 0x14021dfe0"},
+    {"name": "Multi Action group order", "group": "actions list", "value": "Multi Action, Multi Action Switch, Random Action, Key Logic", "source": "function 0x14021dfe0"},
+    {"name": "Navigation group order", "group": "actions list", "value": "Create Folder, Switch Profile, Previous Page, Next Page, Go to Page, Page Indicator", "source": "function 0x14021dfe0"},
+    {"name": "default controller", "group": "actions list", "value": "Keypad", "source": "action manifests (Controllers missing = Keypad)"},
+    {"name": "Delay in main list", "group": "actions list", "value": false, "estimated": true},
+    {"name": "long press time", "group": "controls", "value": 500, "unit": "ms", "source": "function 0x1402d0b20"},
+    {"name": "long press decided", "group": "controls", "value": "short if released before the timer fires", "source": "function 0x1402d0b40"},
+    {"name": "timer long press", "group": "actions", "value": "stop and reset to preset", "estimated": true},
+    {"name": "timer short press", "group": "actions", "value": "start / pause / resume", "estimated": true},
+    {"name": "timer custom sound setting", "group": "actions", "value": "lastUserFile", "source": "person's profiles; function 0x1402d9580"},
+    {"name": "timer finished picture", "group": "actions", "value": "alarm", "source": "function 0x1402d9a80"},
+    {"name": "bell pitch", "group": "actions", "value": 880, "unit": "Hz", "estimated": true},
+    {"name": "bell strikes", "group": "actions", "value": 3, "estimated": true},
+    {"name": "bell strike gap", "group": "actions", "value": 0.6, "unit": "s", "estimated": true},
+    {"name": "bell decay", "group": "actions", "value": 1.4, "unit": "s", "estimated": true},
+    {
+      "name": "USB vendor id",
+      "group": "device",
+      "value": "0x0fd9",
+      "source": "function 0x1401348f0"
+    },
+    {
+      "name": "Stream Deck XL product ids",
+      "group": "device",
+      "value": "0x006c, 0x008f",
+      "source": "function 0x1401348f0"
+    },
+    {
+      "name": "Stream Deck XL grid",
+      "group": "device",
+      "value": "8x4",
+      "source": "function 0x1405f0a80"
+    },
+    {
+      "name": "Stream Deck XL key picture",
+      "group": "device",
+      "value": 96,
+      "unit": "px",
+      "source": "function 0x1405f0a80"
+    },
+    {
+      "name": "Stream Deck MK.2 grid",
+      "group": "device",
+      "value": "5x3",
+      "source": "function 0x1405f0280"
+    },
+    {
+      "name": "Stream Deck MK.2 key picture",
+      "group": "device",
+      "value": 72,
+      "unit": "px",
+      "source": "function 0x1405f0280"
+    },
+    {
+      "name": "Stream Deck Mini grid",
+      "group": "device",
+      "value": "3x2",
+      "source": "function 0x1405f0470"
+    },
+    {
+      "name": "Stream Deck Mini key picture",
+      "group": "device",
+      "value": 80,
+      "unit": "px",
+      "source": "function 0x1405f0470"
+    },
+    {
+      "name": "Stream Deck + grid",
+      "group": "device",
+      "value": "4x2",
+      "source": "function 0x1405f0c10"
+    },
+    {
+      "name": "Stream Deck + key picture",
+      "group": "device",
+      "value": 120,
+      "unit": "px",
+      "source": "function 0x1405f0c10"
+    },
+    {
+      "name": "Stream Deck Neo grid",
+      "group": "device",
+      "value": "4x2",
+      "source": "function 0x1405f1160"
+    },
+    {
+      "name": "Stream Deck Neo key picture",
+      "group": "device",
+      "value": 96,
+      "unit": "px",
+      "source": "function 0x1405f1160"
+    },
+    {
+      "name": "Stream Deck Pedal keys",
+      "group": "device",
+      "value": 3,
+      "source": "function 0x1405f15e0"
+    },
+    {
+      "name": "category order",
+      "group": "actions",
+      "value": "Multi Action, Navigation, Soundboard, Stream Deck, System, Custom",
+      "source": "function 0x1402221c0"
+    },
+    {
+      "name": "multimedia 0",
+      "group": "actions",
+      "value": "Previous Track",
+      "source": "function 0x1402ca990"
+    },
+    {
+      "name": "multimedia 1",
+      "group": "actions",
+      "value": "Play / Pause",
+      "source": "function 0x1402ca990"
+    },
+    {
+      "name": "multimedia 2",
+      "group": "actions",
+      "value": "Next Track",
+      "source": "function 0x1402ca990"
+    },
+    {
+      "name": "multimedia 3",
+      "group": "actions",
+      "value": "Stop",
+      "source": "function 0x1402ca990 (entry 3, Images/btn_media_stop)"
+    },
+    {"name": "plugin start arguments", "group": "plugins", "value": "-port <port> -pluginUUID <uuid> -registerEvent registerPlugin -info <json>", "source": "function 0x140212790"},
+    {"name": "plugin register event", "group": "plugins", "value": "registerPlugin", "source": "function 0x140212790"},
+    {"name": "plugin event names", "group": "plugins", "value": "standard plugin protocol (keyDown, keyUp, willAppear, setTitle, …)", "estimated": true},
+    {"name": "plugin OK / alert flash", "group": "plugins", "value": 1.5, "unit": "s", "estimated": true},
+    {"name": "Lua plugin tick", "group": "plugins", "value": 1, "unit": "s", "estimated": true},
+    {"name": "multimedia 7-17", "group": "actions", "value": "brightness up/down, contrast up/down, eject, video mirror, fast forward, rewind, keyboard brightness up/down, keyboard backlight", "source": "function 0x1402ca990"},
+    {"name": "multimedia key picture per choice", "group": "actions", "value": true, "source": "function 0x1402ca990 (Images/btn_media_<name> per entry)"},
+    {"name": "multimedia default when unset", "group": "actions", "value": 1, "estimated": true},
+    {
+      "name": "multimedia 4",
+      "group": "actions",
+      "value": "Mute",
+      "source": "function 0x1402ca990"
+    },
+    {
+      "name": "multimedia 5",
+      "group": "actions",
+      "value": "Volume Up",
+      "source": "function 0x1402ca990"
+    },
+    {
+      "name": "multimedia 6",
+      "group": "actions",
+      "value": "Volume Down",
+      "source": "function 0x1402ca990"
+    },
+    {
+      "name": "brightness 0",
+      "group": "actions",
+      "value": "Brighter",
+      "source": "function 0x14038ff80"
+    },
+    {
+      "name": "brightness 1",
+      "group": "actions",
+      "value": "Darker",
+      "source": "function 0x14038ff80"
+    },
+    {
+      "name": "hotkey modifier bits",
+      "group": "actions",
+      "value": "Shift 1, Ctrl 2, Alt 4, Win 8",
+      "source": "function 0x1402bbaa0"
+    },
+    {"name": "window buttons (Danish)", "group": "window", "value": "Minimer, Maksimer, Luk", "source": "capture/ui-tree.json (Windows-drawn frame)"},
+    {"name": "window buttons (English)", "group": "window", "value": "Minimize, Maximize, Close", "source": "checks ui-tree.json (Windows-drawn frame)"},
+    {"name": "window button names follow", "group": "window", "value": "display language", "source": "capture/ui-tree.json vs checks ui-tree.json"},
+    {"name": "restore button name (Danish)", "group": "window", "value": "Gendan", "estimated": true},
+    {"name": "brightness step on key down", "group": "actions", "value": "one step at once, then repeat", "source": "function 0x1402c1d20"},
+    {"name": "brightness repeats for", "group": "actions", "value": "actionIdx 0 or 1 (Brighter, Darker)", "source": "functions 0x1402c1d20 / 0x1402c1800"},
+    {"name": "timer missing sound file", "group": "actions", "value": "warned, sound not used", "source": "function 0x1402d9460"},
+    {"name": "random action pick", "group": "actions", "value": "(r32 * count) >> 32, uniform", "source": "function 0x1402c9f30"},
+    {"name": "multi action press while starting or canceling", "group": "actions", "value": "ignored", "source": "functions 0x1402c9c40 / 0x1402c9f30"},
+    {"name": "multi action step held down", "group": "actions", "value": 100, "unit": "ms", "source": "functions 0x140252290 / 0x1403bcdc0"},
+    {"name": "multi action wait after step", "group": "actions", "value": 100, "unit": "ms", "source": "functions 0x140252290 / 0x1403bcdc0"},
+    {"name": "multi action delay step timings", "group": "actions", "value": "(0, delay)", "source": "function 0x14084af80"},
+    {
+      "name": "timer default",
+      "group": "actions",
+      "value": 300,
+      "unit": "s",
+      "estimated": true
+    },
+    {
+      "name": "default key brightness",
+      "group": "device",
+      "value": 70,
+      "unit": "%",
+      "estimated": true
+    },
+    {
+      "name": "title font size default",
+      "group": "keys",
+      "value": 9,
+      "unit": "pt",
+      "source": "saved profiles (FontSize)"
+    },
+    {
+      "name": "title alignment default",
+      "group": "keys",
+      "value": "bottom",
+      "source": "saved profiles (TitleAlignment)"
+    },
+    {
+      "name": "title px per pt",
+      "group": "keys",
+      "value": 1.5,
+      "estimated": true
+    },
+    {
+      "name": "page folder alphabet",
+      "group": "profiles",
+      "value": "0123456789ABCDEFGHIJKLMNOPQRSTVW + Z",
+      "source": "version 2.0 profile files"
+    },
+    {
+      "name": "key size",
+      "group": "window",
+      "value": 78,
+      "unit": "px",
+      "source": "capture/window.png"
+    },
+    {
+      "name": "key pitch",
+      "group": "window",
+      "value": 93,
+      "unit": "px",
+      "source": "capture/window.png"
+    },
+    {
+      "name": "key ring",
+      "group": "window",
+      "value": 3,
+      "unit": "px",
+      "source": "capture/window.png"
+    },
+    {
+      "name": "action list width",
+      "group": "window",
+      "value": 295,
+      "unit": "px",
+      "source": "capture/window.png"
+    },
+    {
+      "name": "category row height",
+      "group": "window",
+      "value": 50,
+      "unit": "px",
+      "source": "capture/ui-tree.json"
+    },
+    {
+      "name": "action row height",
+      "group": "window",
+      "value": 40,
+      "unit": "px",
+      "source": "capture/ui-tree.json"
+    },
+    {
+      "name": "selected key ring colour",
+      "group": "window",
+      "value": "#d9d9d9",
+      "estimated": true
+    },
+    {
+      "name": "image report size",
+      "group": "device",
+      "value": 1024,
+      "unit": "bytes",
+      "source": "function 0x14062dcf0"
+    },
+    {
+      "name": "image report header",
+      "group": "device",
+      "value": "02 07 key last len_lo len_hi page_lo page_hi",
+      "source": "function 0x14062dcf0"
+    },
+    {
+      "name": "image payload per report",
+      "group": "device",
+      "value": 1016,
+      "unit": "bytes",
+      "source": "function 0x14062dcf0"
+    },
+    {
+      "name": "brightness report",
+      "group": "device",
+      "value": "03 08 percent (32 bytes)",
+      "source": "function 0x14062daa0"
+    },
+    {
+      "name": "reset report",
+      "group": "device",
+      "value": "03 02 (32 bytes)",
+      "source": "function 0x14062da40"
+    },
+    {
+      "name": "key input report",
+      "group": "device",
+      "value": "512 bytes, type at byte 1, states from byte 4",
+      "source": "function 0x14061abe0"
+    },
+    {
+      "name": "first-generation deck input report",
+      "group": "device",
+      "value": "64 bytes, states from byte 1",
+      "source": "function 0x1406185e0"
+    },
+    {
+      "name": "JPEG quality XL",
+      "group": "device",
+      "value": 90,
+      "source": "function 0x1405f0a80 (offset 0xbc; meaning inferred)"
+    },
+    {
+      "name": "JPEG quality MK.2",
+      "group": "device",
+      "value": 97,
+      "source": "function 0x1405f0280 (offset 0xbc; meaning inferred)"
+    },
+    {
+      "name": "brightness step",
+      "group": "actions",
+      "value": 10,
+      "unit": "%",
+      "source": "function 0x1402c1e50"
+    },
+    {
+      "name": "brightness Maximum",
+      "group": "actions",
+      "value": 100,
+      "unit": "%",
+      "source": "function 0x1402c1e50"
+    },
+    {
+      "name": "brightness High",
+      "group": "actions",
+      "value": 75,
+      "unit": "%",
+      "source": "function 0x1402c1e50"
+    },
+    {
+      "name": "brightness Medium",
+      "group": "actions",
+      "value": 50,
+      "unit": "%",
+      "source": "function 0x1402c1e50"
+    },
+    {
+      "name": "brightness Low",
+      "group": "actions",
+      "value": 25,
+      "unit": "%",
+      "source": "function 0x1402c1e50"
+    },
+    {
+      "name": "brightness Minimum",
+      "group": "actions",
+      "value": 0,
+      "unit": "%",
+      "source": "function 0x1402c1e50"
+    },
+    {
+      "name": "brightness repeat while held",
+      "group": "actions",
+      "value": "keyboard repeat timing",
+      "source": "functions 0x1402c6f20 / 0x1402c6d90 / 0x1402c6e10"
+    },
+    {
+      "name": "multi action starts on",
+      "group": "actions",
+      "value": "key up",
+      "source": "function 0x1402c9f30"
+    },
+    {
+      "name": "multi action press while running",
+      "group": "actions",
+      "value": "cancel",
+      "source": "function 0x1402c9c40"
+    },
+    {
+      "name": "delay minimum",
+      "group": "actions",
+      "value": 1,
+      "unit": "ms",
+      "source": "function 0x14084b0c0 (newer build: 0x140252290)"
+    },
+    {
+      "name": "key poll interval",
+      "group": "device",
+      "value": 50,
+      "unit": "ms",
+      "source": "function 0x140594250"
+    },
+    {
+      "name": "key read timeout",
+      "group": "device",
+      "value": 0,
+      "unit": "ms",
+      "source": "function 0x1406154e0"
+    },
+    {
+      "name": "live key refresh",
+      "group": "device",
+      "value": 100,
+      "unit": "ms",
+      "estimated": true
+    },
+    {
+      "name": "keeps running when window closes",
+      "group": "app",
+      "value": true,
+      "source": "import setQuitOnLastWindowClosed"
+    },
+    {
+      "name": "tray menu",
+      "group": "app",
+      "value": "Configure, Preferences\u2026, Quit",
+      "source": "function 0x1401dd4d0"
+    },
+    {
+      "name": "tray click opens window",
+      "group": "app",
+      "value": true,
+      "source": "function 0x1401de060"
+    },
+    {
+      "name": "quit asks first",
+      "group": "app",
+      "value": true,
+      "source": "function 0x14018bb80"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[package]
+name = "counter-rust"
+version = "0.1.0"
+edition = "2021"
+description = "LabDeck example plugin: each press adds one"
+
+[dependencies]
+serde_json = "1"
+tungstenite = { version = "0.26", default-features = false, features = ["handshake"] }

@@ -1,0 +1,17 @@
+{
+  "UUID": "com.labdeck.example.counter-js",
+  "Name": "Counter (JavaScript)",
+  "Version": "1.0.0",
+  "Author": "LabDeck example",
+  "Description": "Each press adds one. The count is saved on the key.",
+  "CodePath": "plugin.js",
+  "Category": "Counter (JavaScript)",
+  "Actions": [
+    {
+      "UUID": "com.labdeck.example.counter-js.count",
+      "Name": "Counter",
+      "Tooltip": "Each press adds one",
+      "States": [{ "Title": "0" }]
+    }
+  ]
+}
