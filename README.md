@@ -40,7 +40,7 @@ Contents:
   | Multi Action | Multi Action, Multi Action Switch, Random Action |
   | Navigation | Create Folder, Switch Profile, Previous/Next Page, Go to Page, Page Indicator |
   | Soundboard | Play Audio, Stop Audio |
-  | Stream Deck | Timer (with a bell when the time is up; hold the key to reset), Brightness, Sleep |
+  | Stream Deck | Timer (30 s unless you set a time; a chime, your own sound file or no sound when the time is up; hold the key to reset), Brightness (remembered for each deck, 80 % to begin with), Sleep |
   | System | Website (gets the site's icon automatically), Hotkey, Hotkey Switch, Timed Hotkey, Open, Open Application, Close, Text, Multimedia |
 
   Key Logic, Action Bar and Toggle Virtual Stream Deck are listed like in the original but are

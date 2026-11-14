@@ -540,7 +540,7 @@ fn settings_ui(ui: &mut egui::Ui, k: &mut KeyAction, ctx: &Ctx, st: &mut State, 
         }
         "com.elgato.streamdeck.system.timer" => {
             ui.label(RichText::new("Duration").color(TEXT_DIM));
-            let mut secs = k.settings.get("duration").and_then(|v| v.as_u64()).unwrap_or(300);
+            let mut secs = crate::app::timer_seconds(k).unwrap_or(0);
             let (mut m, mut s) = (secs / 60, secs % 60);
             ui.horizontal(|ui| {
                 let a = ui.add(egui::DragValue::new(&mut m).range(0..=999).suffix(" min")).changed();
@@ -550,9 +550,22 @@ fn settings_ui(ui: &mut egui::Ui, k: &mut KeyAction, ctx: &Ctx, st: &mut State, 
                     set(k, "duration", secs.into());
                 }
             });
-            text_setting(ui, k, "lastUserFile", "Sound when time is up", "leave empty for the bell");
+            // The sound when time is up (actionIdx): LabDeck's chimes, the person's file, or none.
+            ui.label(RichText::new("Sound when time is up").color(TEXT_DIM));
+            let cur = actions::timer_sound(&k.settings);
+            let label = actions::TIMER_SOUNDS.iter().find(|(i, _)| *i == cur).map_or("Bell", |(_, l)| *l);
+            egui::ComboBox::from_id_salt("timer-sound").selected_text(label).width(220.0).show_ui(ui, |ui| {
+                for (i, l) in actions::TIMER_SOUNDS {
+                    if ui.selectable_label(i == cur, l).clicked() {
+                        set(k, "actionIdx", i.into());
+                    }
+                }
+            });
+            if cur == actions::TIMER_SOUND_FILE {
+                text_setting(ui, k, "lastUserFile", "Sound file", "/home/you/sounds/alarm.wav");
+            }
             ui.label(
-                RichText::new("Press to start, press again to pause or resume. Hold for half a second to stop and reset to this time. A bell rings when the time is up.")
+                RichText::new("Press to start, press again to pause or resume. Hold for half a second to stop and reset to this time. A time of 0 doesn't start.")
                     .color(TEXT_MUTED),
             );
         }

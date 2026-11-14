@@ -46,9 +46,11 @@ LabDeck talks to the device through the hidapi library, on its own thread.
   `05` (0x14061ab50), serial `06` (0x14061aa40) and firmware upload `02 05` (0x14061aca0).
 - JPEG quality: 90 for the XL, + and 0x006d deck, 97 for the MK.2, scissor-key deck and Neo (offset
   0xbc in each model's constructor; reading it as the quality is an inference).
-- Every model's constructor also stores a size pair at 0xcc (50, 72 or 100 px) and 75 at 0x11c.
-  75 equals the "High" brightness level (0x1402c1e50), so it may be the default key brightness;
-  that's unconfirmed, so LabDeck's default stays at its **estimated** 70 %.
+- Every model's constructor also stores a size pair at 0xcc (50, 72 or 100 px) and 75 at 0x11c
+  (what it's for wasn't found; it isn't the default brightness, see "Key brightness").
+- Key brightness (device-settings getter 0x14018c340): kept per deck; a deck with none saved gets
+  **80 %** (0x50), and a saved value above 100 is read as 80 too. LabDeck keeps it per deck serial
+  number in settings.json (`brightness`), written 0.6 s after the last change.
 - **Estimated**: picture rotation per model (180° except the +), the first-generation deck's and
   Mini's BMP header `02 01 page 00 last key+1` and their brightness report `05 55 aa d1 01 pct`.
 
@@ -115,7 +117,10 @@ Multi Actions themselves, Key Logic, Parent Folder).
   short, but a held step is always released.
 - Delay step: timings (0, `delay`) (0x14084af80), so it waits `delay` ms, at least 1 ms
   (`MULTI_STEP_MIN_WAIT_MS`).
-- Timer: `duration` seconds (default 300 s, **estimated**: not found). Go to Page: `PageIndex`
+- Timer: `duration` seconds; a key without one runs **30 s** (settings reader 0x1402ddec0 passes
+  0x1e as the default; the constructor 0x1402ddc30 starts with it). A number or a string of digits
+  is read (0x1407a6320). A Timer whose duration isn't above 0 doesn't run (0x1402de9a0).
+  `actionIdx` (default 0) picks the sound when time is up (see "Timer end sound"). Go to Page: `PageIndex`
   (treated as 1-based, **estimated**).
 - Create Folder: `ProfileUUID` = id of the folder's page.
 
@@ -145,8 +150,7 @@ wording).
 
 ## Estimated, with reasons
 
-- Default key brightness 70 %: not found (75 is the unconfirmed candidate above).
-- Timer default 300 s and its 3 s red flash when done: not found.
+- The Timer's 3 s red flash when done: not found.
 - Selected-key ring colour: no capture with a selected key.
 - Title size 1.5 px per point on a 72 px key: fitted to captured keys.
 
@@ -178,10 +182,15 @@ wording).
 
 - When the time is up the key shows the alarm picture (0x1402d9a80) and plays its sound
   (0x1402d9580); a chosen file is saved as `lastUserFile` in the key's settings.
-- LabDeck plays `lastUserFile` if that file exists. If the chosen file is missing (checked as in
-  0x1402d9460) it says so in the status line and rings its own bell instead, which also plays when
-  no file is chosen: 3 strikes 0.6 s apart, 880 Hz with partials 1, 2, 2.76, 5.4, 8.93, dying away
-  over about 1.4 s (**estimated**: designed here). The key flashes red for 3 s.
+- The sound is chosen by `actionIdx` (0x1402df610): 0..3 four built-in sounds, 4 the person's file
+  `lastUserFile` (used only if it exists), 6 no sound; 5 has no sound either.
+- LabDeck's built-in sounds are chimes it makes itself (**estimated**: designed here): 0 Bell
+  (880 Hz, 3 strikes 0.6 s apart), 1 Low bell (523.25 Hz, 2 strikes 0.45 s apart), 2 Quick chime
+  (1174.66 Hz, 3 strikes 0.25 s apart), 3 Ping (1567.98 Hz, 1 strike). Each strike has partials
+  1, 2, 2.76, 5.4, 8.93 dying away over about 1.4 s. Choice 4 plays the file; a missing file plays
+  nothing and the status line says so. 6 is silent. Timer keys from earlier LabDeck builds saved
+  only `lastUserFile`; with no `actionIdx` and a file they keep playing the file. The key flashes
+  red for 3 s.
 
 ## Hotkey press and release
 

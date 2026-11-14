@@ -226,7 +226,7 @@
     {"name": "restore button name (Danish)", "group": "window", "value": "Gendan", "estimated": true},
     {"name": "brightness step on key down", "group": "actions", "value": "one step at once, then repeat", "source": "function 0x1402c1d20"},
     {"name": "brightness repeats for", "group": "actions", "value": "actionIdx 0 or 1 (Brighter, Darker)", "source": "functions 0x1402c1d20 / 0x1402c1800"},
-    {"name": "timer missing sound file", "group": "actions", "value": "warned, sound not used", "source": "function 0x1402d9460"},
+    {"name": "timer missing sound file", "group": "actions", "value": "no sound, warned", "source": "functions 0x1402d9460 / 0x1402df610"},
     {"name": "random action pick", "group": "actions", "value": "(r32 * count) >> 32, uniform", "source": "function 0x1402c9f30"},
     {"name": "multi action press while starting or canceling", "group": "actions", "value": "ignored", "source": "functions 0x1402c9c40 / 0x1402c9f30"},
     {"name": "multi action step held down", "group": "actions", "value": 100, "unit": "ms", "source": "functions 0x140252290 / 0x1403bcdc0"},
@@ -235,17 +235,24 @@
     {
       "name": "timer default",
       "group": "actions",
-      "value": 300,
+      "value": 30,
       "unit": "s",
-      "estimated": true
+      "source": "functions 0x1402ddec0 / 0x1402ddc30"
     },
+    {"name": "timer runs only when duration is", "group": "actions", "value": "above 0", "source": "function 0x1402de9a0"},
+    {"name": "timer duration read as", "group": "actions", "value": "number, or a string of digits", "source": "function 0x1407a6320"},
+    {"name": "timer sound choices", "group": "actions", "value": "0..3 built-in, 4 own file (if it exists), 6 none", "source": "function 0x1402df610"},
+    {"name": "timer sound choice default", "group": "actions", "value": 0, "source": "function 0x1402ddec0"},
+    {"name": "timer built-in sounds in LabDeck", "group": "actions", "value": "Bell 880 Hz, Low bell 523.25 Hz, Quick chime 1174.66 Hz, Ping 1567.98 Hz", "estimated": true},
     {
       "name": "default key brightness",
       "group": "device",
-      "value": 70,
+      "value": 80,
       "unit": "%",
-      "estimated": true
+      "source": "function 0x14018c340"
     },
+    {"name": "saved brightness above", "group": "device", "value": 100, "unit": "%", "source": "function 0x14018c340"},
+    {"name": "brightness kept", "group": "device", "value": "per deck", "source": "functions 0x14018c340 / 0x14026e300"},
     {
       "name": "title font size default",
       "group": "keys",

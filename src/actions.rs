@@ -371,30 +371,34 @@ impl Runner {
         Ok(self.audio.as_ref().unwrap())
     }
 
-    /// The Timer's end sound. Like the original (KA_Timer plays its sound player when the
-    /// time is up), a chosen file (`lastUserFile`) plays if there is one; otherwise a bell.
-    /// A chosen file that doesn't exist is reported, as the original's check (0x1402d9460) logs it.
-    pub fn timer_bell(&mut self, user_file: &str) -> Vec<Effect> {
+    /// The Timer's sound when time is up, by its choice (`actionIdx`, see `timer_sound`):
+    /// 0..=3 one of LabDeck's own chimes, 4 the person's file (`lastUserFile`, only if it
+    /// exists, as 0x1402df610 checks), 6 none. A chosen file that's missing plays nothing and is
+    /// reported.
+    pub fn timer_bell(&mut self, choice: u64, user_file: &str) -> Vec<Effect> {
         let file = user_file.trim();
-        if !file.is_empty() && std::path::Path::new(file).exists() {
-            return self.play(file, 1.0);
-        }
-        let mut fx = Vec::new();
-        if !file.is_empty() {
-            fx.push(Effect::Status(format!("Timer sound not found ({file}), so the bell rang instead")));
-        }
+        let chime = match choice {
+            TIMER_SOUND_FILE => {
+                if !file.is_empty() && std::path::Path::new(file).exists() {
+                    return self.play(file, 1.0);
+                }
+                let what = if file.is_empty() { "no file is chosen".to_string() } else { format!("{file} wasn't found") };
+                return vec![Effect::Status(format!("Time's up. No sound: {what}."))];
+            }
+            c => match CHIMES.get(c as usize) {
+                Some(ch) => *ch,
+                None => return Vec::new(), // None (6), or a choice with no sound
+            },
+        };
         let sink = match self.sink() {
             Ok(s) => s,
-            Err(e) => {
-                fx.push(Effect::Status(e));
-                return fx;
-            }
+            Err(e) => return vec![Effect::Status(e)],
         };
         let player = rodio::Player::connect_new(sink.mixer());
-        player.append(bell_samples());
+        player.append(bell_samples(chime));
         self.players.retain(|p| !p.empty());
         self.players.push(player);
-        fx
+        Vec::new()
     }
 
     fn play(&mut self, path: &str, volume: f32) -> Vec<Effect> {
@@ -434,15 +438,48 @@ pub const BELL_STRIKES: usize = 3;
 pub const BELL_GAP_S: f32 = 0.6;
 pub const BELL_DECAY_S: f32 = 1.4;
 
-fn bell_samples() -> rodio::buffer::SamplesBuffer {
+/// One of LabDeck's own Timer chimes: pitch, strikes and seconds between strikes.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Chime {
+    pub hz: f32,
+    pub strikes: usize,
+    pub gap_s: f32,
+}
+
+/// The Timer's built-in sounds 0..=3. The original's choices 0..=3 are four sound files of its
+/// own (0x1402df610); LabDeck plays four chimes it makes itself instead.
+pub const CHIMES: [Chime; 4] = [
+    Chime { hz: BELL_HZ, strikes: BELL_STRIKES, gap_s: BELL_GAP_S },
+    Chime { hz: 523.25, strikes: 2, gap_s: 0.45 },
+    Chime { hz: 1174.66, strikes: 3, gap_s: 0.25 },
+    Chime { hz: 1567.98, strikes: 1, gap_s: 0.0 },
+];
+/// Timer sound choices (`actionIdx`, function 0x1402df610): 0..=3 built in, 4 the person's
+/// file (`lastUserFile`), 6 none. 5 has no sound there either, so it isn't offered.
+pub const TIMER_SOUNDS: [(u64, &str); 6] =
+    [(0, "Bell"), (1, "Low bell"), (2, "Quick chime"), (3, "Ping"), (TIMER_SOUND_FILE, "Your own sound file"), (TIMER_SOUND_NONE, "No sound")];
+pub const TIMER_SOUND_FILE: u64 = 4;
+pub const TIMER_SOUND_NONE: u64 = 6;
+
+/// A Timer's sound choice: `actionIdx`, 0 when missing (settings reader 0x1402ddec0). Timer keys
+/// made by earlier LabDeck builds saved only `lastUserFile`; those keep playing their file.
+pub fn timer_sound(s: &Value) -> u64 {
+    match s.get("actionIdx").and_then(|v| v.as_u64()) {
+        Some(i) => i,
+        None if !s.get("lastUserFile").and_then(|v| v.as_str()).unwrap_or("").trim().is_empty() => TIMER_SOUND_FILE,
+        None => 0,
+    }
+}
+
+fn bell_samples(ch: Chime) -> rodio::buffer::SamplesBuffer {
     let rate = 44_100u32;
-    let total = BELL_GAP_S * (BELL_STRIKES as f32 - 1.0) + BELL_DECAY_S * 1.6;
+    let total = ch.gap_s * (ch.strikes as f32 - 1.0) + BELL_DECAY_S * 1.6;
     let n = (total * rate as f32) as usize;
     // Partial ratios and loudness of a small bell.
     let partials = [(1.0f32, 1.0f32), (2.0, 0.5), (2.76, 0.35), (5.4, 0.18), (8.93, 0.08)];
     let mut out = vec![0f32; n];
-    for s in 0..BELL_STRIKES {
-        let start = (s as f32 * BELL_GAP_S * rate as f32) as usize;
+    for s in 0..ch.strikes {
+        let start = (s as f32 * ch.gap_s * rate as f32) as usize;
         for (i, v) in out.iter_mut().enumerate().skip(start) {
             let t = (i - start) as f32 / rate as f32;
             let attack = (t / 0.004).min(1.0);
@@ -450,7 +487,7 @@ fn bell_samples() -> rodio::buffer::SamplesBuffer {
             for (k, (ratio, amp)) in partials.iter().enumerate() {
                 // Higher partials fade faster, as on a real bell.
                 let decay = (-t / (BELL_DECAY_S / (1.0 + k as f32 * 0.8))).exp();
-                x += amp * decay * (std::f32::consts::TAU * BELL_HZ * ratio * t).sin();
+                x += amp * decay * (std::f32::consts::TAU * ch.hz * ratio * t).sin();
             }
             *v += 0.22 * attack * x;
         }

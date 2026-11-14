@@ -29,8 +29,8 @@ pub enum Drag {
 pub struct Timer {
     pub end: Instant,
     pub done_at: Option<Instant>,
-    /// The key's own sound file (`lastUserFile`, as the original saves it); empty = bell.
-    pub sound: String,
+    /// The sound when time is up (actions::timer_sound): a choice and the person's own file.
+    pub sound: (u64, String),
     /// Time left while paused (a short press pauses and resumes).
     pub paused: Option<std::time::Duration>,
 }
@@ -45,8 +45,14 @@ impl Timer {
 /// treats a key up before it fires as a short press (KA_OpenApp, functions 0x1402d0b20/0x1402d0b40).
 pub const LONG_PRESS_MS: u64 = 500;
 
-pub const DEFAULT_BRIGHTNESS: u8 = 70;
-pub const DEFAULT_TIMER_SECONDS: u64 = 300;
+/// Key brightness of a deck with none saved, and the highest a saved one may be (above it the
+/// default is used): function 0x14018c340 reads the device setting with default 0x50 and
+/// returns 0x50 for anything not below 0x65.
+pub const DEFAULT_BRIGHTNESS: u8 = 80;
+pub const MAX_BRIGHTNESS: u8 = 100;
+/// A Timer key without a `duration` runs this many seconds (settings reader 0x1402ddec0 passes
+/// 0x1e as the default); a Timer whose duration isn't above 0 doesn't run (0x1402de9a0).
+pub const DEFAULT_TIMER_SECONDS: u64 = 30;
 pub const TIMER_FLASH_SECONDS: f32 = 3.0;
 
 pub struct App {
@@ -114,6 +120,8 @@ pub struct App {
     /// Another LabDeck was already running when this one started: window only (no deck,
     /// plugins, tray or saving).
     pub second_copy: bool,
+    /// Settings changed (a deck's brightness) and not yet written: when they changed last.
+    settings_dirty: Option<Instant>,
     /// Site icons fetched in the background: (key action id, picture file or error).
     icon_tx: Sender<(String, Result<PathBuf, String>)>,
     icon_rx: Receiver<(String, Result<PathBuf, String>)>,
@@ -171,6 +179,17 @@ pub struct Settings {
     /// The profile that was selected last, opened again at start.
     #[serde(default)]
     pub last_profile: Option<String>,
+    /// Key brightness per deck (by serial number), kept like the original's device settings
+    /// (getter 0x14018c340: DEFAULT_BRIGHTNESS when none is saved or it's above 100).
+    #[serde(default)]
+    pub brightness: HashMap<String, u8>,
+}
+
+impl Settings {
+    /// The brightness to use for a deck.
+    pub fn brightness_for(&self, serial: &str) -> u8 {
+        self.brightness.get(serial).copied().filter(|v| *v <= MAX_BRIGHTNESS).unwrap_or(DEFAULT_BRIGHTNESS)
+    }
 }
 
 impl Settings {
@@ -180,6 +199,19 @@ impl Settings {
             .and_then(|t| serde_json::from_str(&t).ok())
             .unwrap_or_default()
     }
+}
+
+/// A Timer key's length in seconds, read like settings reader 0x1402ddec0 does (a number, or a
+/// string of digits; DEFAULT_TIMER_SECONDS when missing), or None when it isn't above 0.
+pub fn timer_seconds(k: &KeyAction) -> Option<u64> {
+    let v = k.settings.get("duration");
+    let secs = match v {
+        Some(serde_json::Value::Number(n)) => n.as_i64().or_else(|| n.as_f64().map(|f| f as i64)),
+        Some(serde_json::Value::String(s)) => s.trim().parse::<i64>().ok(),
+        _ => None,
+    }
+    .unwrap_or(DEFAULT_TIMER_SECONDS as i64);
+    (secs > 0).then_some(secs as u64)
 }
 
 /// How often live keys (clock, timer) and the hardware are brought in sync.
@@ -379,6 +411,7 @@ impl App {
             press_direct: false,
             warned_admin: None,
             second_copy,
+            settings_dirty: None,
             icon_tx,
             icon_rx,
             device_sent: Vec::new(),
@@ -835,7 +868,7 @@ impl App {
     }
 
     /// Short press on a Timer: start it, pause it, resume it; once it has rung, start over.
-    fn timer_short_press(&mut self, k: &KeyAction) {
+    fn timer_short_press(&mut self, k: &KeyAction, now: f64) {
         match self.timers.get_mut(&k.action_id) {
             Some(t) if t.done_at.is_some() => {
                 self.timers.remove(&k.action_id);
@@ -845,13 +878,17 @@ impl App {
                 None => t.paused = Some(t.end.saturating_duration_since(Instant::now())),
             },
             None => {
-                let secs = k.settings.get("duration").and_then(|v| v.as_u64()).unwrap_or(DEFAULT_TIMER_SECONDS);
+                // A Timer whose duration isn't above 0 doesn't run (0x1402de9a0).
+                let Some(secs) = timer_seconds(k) else {
+                    self.say("Set a time for this timer first.", now);
+                    return;
+                };
                 self.timers.insert(
                     k.action_id.clone(),
                     Timer {
                         end: Instant::now() + std::time::Duration::from_secs(secs),
                         done_at: None,
-                        sound: k.setting_str("lastUserFile"),
+                        sound: (actions::timer_sound(&k.settings), k.setting_str("lastUserFile")),
                         paused: None,
                     },
                 );
@@ -865,7 +902,7 @@ impl App {
             if self.timers.remove(&k.action_id).is_some() {
                 self.runner.stop_audio();
             }
-            let secs = k.settings.get("duration").and_then(|v| v.as_u64()).unwrap_or(DEFAULT_TIMER_SECONDS);
+            let secs = timer_seconds(&k).unwrap_or(0);
             self.say(format!("Timer reset to {:02}:{:02}", secs / 60, secs % 60), now);
         }
     }
@@ -975,7 +1012,7 @@ impl App {
         if self.timer_hold.is_some_and(|h| h.0 == pos) {
             self.timer_hold = None;
             if let Some(k) = self.key_at(pos).cloned() {
-                self.timer_short_press(&k);
+                self.timer_short_press(&k, now);
             }
             return;
         }
@@ -1050,7 +1087,7 @@ impl App {
             }
             Effect::ToggleTimer => {
                 if let Some(k) = from {
-                    self.timer_short_press(k);
+                    self.timer_short_press(k, now);
                 }
             }
             Effect::Status(s) => self.say(s, now),
@@ -1114,6 +1151,13 @@ impl App {
     }
 
     pub fn set_brightness(&mut self, v: u8) {
+        let v = v.min(MAX_BRIGHTNESS);
+        // Kept for this deck (saved a moment later, so a held Brighter key doesn't write each step).
+        let serial = self.connected.as_ref().map(|c| c.1.clone()).unwrap_or_default();
+        if self.settings.brightness.get(&serial) != Some(&v) {
+            self.settings.brightness.insert(serial, v);
+            self.settings_dirty = Some(Instant::now());
+        }
         self.brightness = v;
         self.sleeping = false;
         if let Some(tx) = &self.hid_tx {
@@ -1317,6 +1361,8 @@ impl App {
         for e in events {
             match e {
                 hid::Event::Connected { model, serial } => {
+                    // The deck's own saved brightness (0x14018c340).
+                    self.brightness = self.settings.brightness_for(&serial);
                     self.connected = Some((model, serial));
                     self.device_sent.clear();
                     self.say(format!("{} connected", model.name), now);
@@ -1396,7 +1442,7 @@ impl App {
         }
         // Finished timers flash for a few seconds, then reset.
         let mut done = Vec::new();
-        let mut ring: Vec<String> = Vec::new();
+        let mut ring: Vec<(u64, String)> = Vec::new();
         for (id, t) in self.timers.iter_mut() {
             if t.paused.is_none() && Instant::now() >= t.end && t.done_at.is_none() {
                 t.done_at = Some(Instant::now());
@@ -1409,11 +1455,15 @@ impl App {
         for d in done {
             self.timers.remove(&d);
         }
-        // Time's up: ring the bell (or the key's own sound file).
-        for sound in ring {
-            for e in self.runner.timer_bell(&sound) {
+        // Time's up: the key's chosen sound.
+        for (choice, file) in ring {
+            for e in self.runner.timer_bell(choice, &file) {
                 self.apply(e, None, now);
             }
+        }
+        if self.settings_dirty.is_some_and(|t| t.elapsed().as_secs_f64() > 0.6) {
+            self.settings_dirty = None;
+            self.save_settings();
         }
         if self.persist && self.dirty && now - self.last_change > 0.6 {
             let root = profile::profiles_root();
@@ -1432,6 +1482,9 @@ impl App {
 
     pub fn quit(&mut self, ctx: &egui::Context) {
         self.quitting = true;
+        if self.settings_dirty.take().is_some() {
+            self.save_settings();
+        }
         // No key stays held down after LabDeck closes.
         self.key_held.clear();
         if let Ok(mut d) = self.direct.lock() {
@@ -1570,6 +1623,40 @@ impl eframe::App for App {
 
 #[cfg(test)]
 mod tests {
+    fn timer(settings: serde_json::Value) -> crate::profile::KeyAction {
+        let mut k = crate::profile::KeyAction::new("com.elgato.streamdeck.system.timer", "Timer", 1);
+        k.settings = settings;
+        k
+    }
+
+    #[test]
+    fn timer_length_and_sound_follow_the_settings_reader() {
+        use serde_json::json;
+        // No duration: 30 s. Digits in a string count too. Not above 0: the timer doesn't run.
+        assert_eq!(super::timer_seconds(&timer(json!({}))), Some(30));
+        assert_eq!(super::timer_seconds(&timer(json!({"duration": 90}))), Some(90));
+        assert_eq!(super::timer_seconds(&timer(json!({"duration": "45"}))), Some(45));
+        assert_eq!(super::timer_seconds(&timer(json!({"duration": 0}))), None);
+        assert_eq!(super::timer_seconds(&timer(json!({"duration": -5}))), None);
+        // Sound: actionIdx, 0 when missing; an older LabDeck key with only a file keeps its file.
+        assert_eq!(crate::actions::timer_sound(&json!({})), 0);
+        assert_eq!(crate::actions::timer_sound(&json!({"actionIdx": 6})), crate::actions::TIMER_SOUND_NONE);
+        assert_eq!(crate::actions::timer_sound(&json!({"lastUserFile": "C:/a.wav"})), crate::actions::TIMER_SOUND_FILE);
+        assert_eq!(crate::actions::timer_sound(&json!({"lastUserFile": "C:/a.wav", "actionIdx": 2})), 2);
+    }
+
+    #[test]
+    fn each_deck_keeps_its_brightness() {
+        let mut s = super::Settings::default();
+        // None saved: 80 %. Above 100: 80 % too.
+        assert_eq!(s.brightness_for("A1"), 80);
+        s.brightness.insert("A1".into(), 35);
+        s.brightness.insert("B2".into(), 140);
+        assert_eq!(s.brightness_for("A1"), 35);
+        assert_eq!(s.brightness_for("B2"), 80);
+        assert_eq!(s.brightness_for("C3"), 80);
+    }
+
     #[test]
     fn only_one_copy_drives_the_deck() {
         // A second holder of the lock is turned away while the first runs, and gets it once the
