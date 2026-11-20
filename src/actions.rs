@@ -597,7 +597,11 @@ fn close_app(name: &str) -> Vec<Effect> {
     #[cfg(unix)]
     let r = std::process::Command::new("pkill").arg("-x").arg(&name).status();
     #[cfg(not(unix))]
-    let r = std::process::Command::new("taskkill").args(["/IM", &format!("{name}.exe")]).status();
+    let r = {
+        // No console window flashing up for taskkill.
+        use std::os::windows::process::CommandExt;
+        std::process::Command::new("taskkill").args(["/IM", &format!("{name}.exe")]).creation_flags(0x0800_0000).status()
+    };
     match r {
         Ok(_) => vec![],
         Err(e) => vec![Effect::Status(format!("Could not close {name}: {e}"))],

@@ -804,6 +804,14 @@ fn menus(app: &mut App, ui: &mut egui::Ui, now: f64) {
                         app.set_brightness(b as u8);
                     }
                 });
+                ui.separator();
+                // Starts in the tray at login, so LabDeck never needs a terminal (a second copy
+                // changes nothing, like its other settings).
+                let mut on = app.login_start;
+                let resp = ui.add_enabled(app.persist, egui::Checkbox::new(&mut on, "Start LabDeck when I log in"));
+                if resp.changed() {
+                    app.set_login_start(on, now);
+                }
             });
         });
         let over = ctx.pointer_hover_pos().is_some_and(|pt| resp.response.rect.contains(pt));

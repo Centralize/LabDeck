@@ -141,6 +141,9 @@ pub struct App {
     pub plugin_looks: HashMap<String, PluginLook>,
     /// Plugin keys their plugin was told are shown (willAppear): context → (plugin, key, position).
     plugin_shown: HashMap<String, (String, KeyAction, (usize, usize))>,
+    /// LabDeck starts in the tray when the user logs in (desktop.rs keeps it in the system's own
+    /// place for that, so it's read from there at start).
+    pub login_start: bool,
 }
 
 /// What a plugin set on one key: titles and pictures (per state, or None for every state) and a
@@ -425,6 +428,7 @@ impl App {
             plugins: None,
             plugin_looks: HashMap::new(),
             plugin_shown: HashMap::new(),
+            login_start: false,
         };
         // Start the plugins in LabDeck's own Plugins folder (never in --screenshot mode).
         if app.persist {
@@ -435,6 +439,7 @@ impl App {
             }
         }
         if app.persist {
+            app.login_start = crate::desktop::starts_at_login();
             app.tray = tray::create(cc.egui_ctx.clone(), tray_tx);
             // Keep waking up while the window is hidden, so live keys and the device stay current.
             let ctx = cc.egui_ctx.clone();
@@ -1496,6 +1501,20 @@ impl App {
             h.stop();
         }
         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+    }
+
+    /// The "Start LabDeck when I log in" switch.
+    pub fn set_login_start(&mut self, on: bool, now: f64) {
+        match crate::desktop::set_start_at_login(on) {
+            Ok(()) => {
+                self.login_start = on;
+                self.say(if on { "LabDeck will start in the tray when you log in." } else { "LabDeck won't start when you log in." }, now);
+            }
+            Err(e) => {
+                self.login_start = crate::desktop::starts_at_login();
+                self.say(&format!("Could not change starting at login: {e}"), now);
+            }
+        }
     }
 
     pub fn save_settings(&self) {

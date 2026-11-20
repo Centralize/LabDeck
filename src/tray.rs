@@ -19,8 +19,9 @@ pub struct Tray {
     _icon: TrayIcon,
 }
 
-/// A small purple tile with a 3×3 key grid, like the window's title-bar badge.
-fn badge(px: u32) -> Vec<u8> {
+/// A small purple tile with a 3×3 key grid, like the window's title-bar badge. Also LabDeck's
+/// window and app menu icon (desktop.rs).
+pub fn badge(px: u32) -> Vec<u8> {
     let mut cv = Canvas::new(px, px);
     let s = px as f32;
     cv.round_rect(s * 0.06, s * 0.06, s * 0.88, s * 0.88, s * 0.18, Rgba::hex("#6a40ff"));

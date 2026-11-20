@@ -51,6 +51,11 @@ Contents:
   [Plugins.md](Plugins.md). Plugins whose manifest is encrypted can't run, but their keys are kept.
 - **Runs in the background:** closing the window keeps LabDeck running in the system tray, and the
   Stream Deck keeps working. Use the tray icon to open the window again or to quit.
+- **A normal desktop app, no terminal needed:** LabDeck has its own icon. On Windows no console
+  window opens with it. On Linux it adds itself to the app menu, so you can start it there or pin
+  it to the dock. If it is started from a terminal, it moves to the background so you can close
+  the terminal. The **Start LabDeck when I log in** switch (click the device name) starts it in
+  the tray when you log in, on Windows, Linux and macOS.
 
 ---
 
@@ -74,7 +79,7 @@ Contents:
   it.
 - **Profiles:** click the profile name under the device name. From there you can switch, rename,
   create, duplicate, import and delete profiles.
-- **Brightness:** click the device name, or the gear icon.
+- **Brightness and starting at login:** click the device name, or the gear icon.
 
 ---
 
@@ -113,8 +118,9 @@ For a quicker build while testing, `cargo build` puts a slower debug build in `t
 No extra drivers are needed: Windows gives programs access to the Stream Deck by itself. **Close
 Elgato's Stream Deck app first**, because two programs can't drive the device at the same time.
 
-The release build is a window-only program, so it doesn't open a console window. Use the debug
-build (`cargo build`) if you want to see printed messages.
+Start `labdeck.exe` by double-clicking it (or pin it to the taskbar or Start). Both the release and
+the debug build are window-only programs: no console window opens with them. Started from a
+terminal with `--help`, `--favicon` or `--icons`, LabDeck still prints into that terminal.
 
 ### macOS
 
@@ -148,7 +154,27 @@ Quit Elgato's Stream Deck app before starting LabDeck.
 ### Linux
 
 Build LabDeck on the Linux computer itself: a build made on Windows only runs on Windows. Copy the
-`app` folder over (the `target` folder can be left behind), then:
+`app` folder over (the `target` folder can be left behind).
+
+**The quick way (one command).** Open a terminal in the `app` folder and type:
+
+```sh
+sh linux/install.sh
+```
+
+It does everything below in one go:
+
+- installs the build tools (it asks for your password for that) and Rust;
+- builds LabDeck and puts it in `~/.local/bin`;
+- lets your user reach the Stream Deck;
+- starts LabDeck.
+
+From then on **LabDeck is in your app menu** (search for "LabDeck", or pin it to the dock), so you
+don't need the terminal again. Run the same command again to update after getting a newer LabDeck.
+`sh linux/install.sh --uninstall` takes it out of `~/.local/bin`, the menu and autostart again.
+Your profiles stay.
+
+**Step by step**, if you'd rather do it by hand:
 
 1. Install a C compiler, `pkg-config` and the development files for **udev** (USB device access)
    and **ALSA** (sound):
@@ -182,11 +208,17 @@ Build LabDeck on the Linux computer itself: a build made on Windows only runs on
 
    Then unplug the Stream Deck and plug it back in.
 
-5. Run it:
+5. Run it once from the terminal:
 
    ```sh
    ./target/release/labdeck
    ```
+
+   LabDeck moves to the background at once. The terminal says "LabDeck is running. You can close
+   this terminal", and you can close it without stopping LabDeck. At start LabDeck adds itself to
+   your app menu (`~/.local/share/applications/labdeck.desktop`, with its icon). From then on,
+   start it from the menu. If you move the program, start it once from its new place and the menu
+   entry follows. To keep it in the terminal instead (to watch its messages), add `--foreground`.
 
 Desktop notes:
 
@@ -199,19 +231,25 @@ Desktop notes:
 - **Dropping files on keys:** where the pointer position can't be read (Wayland), a dropped
   picture goes onto the selected key.
 
-To install it for your user only:
+To install it for your user only (what the quick way does), copy it, then start the copy once so
+the menu entry points at it:
 
 ```sh
 install -Dm755 target/release/labdeck ~/.local/bin/labdeck
+~/.local/bin/labdeck
 ```
 
 ---
 
 ## Running it
 
+Normally you start LabDeck like any other app: from the Start menu or taskbar (Windows), the app
+menu or dock (Linux), or Launchpad and the Dock (macOS). It can also be started with these:
+
 ```text
-labdeck                     open the window
+labdeck                     open the window (from a Linux terminal: moves to the background)
 labdeck --background        start in the tray without a window (for autostart)
+labdeck --foreground        Linux: stay in the terminal and print messages there
 labdeck --help              list the options
 ```
 
@@ -223,19 +261,17 @@ labdeck --favicon example.com  fetch a site's icon, make a key picture, print wh
 labdeck --icons icons.png      draw every built-in icon on one sheet, save it as a PNG, exit
 ```
 
-To start with your computer:
+To start with your computer, click the device name (or the gear icon) in LabDeck and tick **Start
+LabDeck when I log in**. LabDeck then starts in the tray, without its window, each time you log
+in. Untick it to stop that. It uses each system's own place for this:
 
-- **Windows:** press Win+R, type `shell:startup`, and put a shortcut to `labdeck.exe --background`
-  in that folder.
-- **macOS:** System Settings → General → Login Items → add LabDeck.
-- **Linux:** create `~/.config/autostart/labdeck.desktop` with:
+- **Windows:** the `LabDeck` value under
+  `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`.
+- **Linux:** `~/.config/autostart/labdeck.desktop`.
+- **macOS:** `~/Library/LaunchAgents/com.labdeck.LabDeck.plist`.
 
-  ```ini
-  [Desktop Entry]
-  Type=Application
-  Name=LabDeck
-  Exec=/home/YOU/.local/bin/labdeck --background
-  ```
+All three point at the LabDeck you ticked it in. If you move LabDeck, tick it off and on again.
+On Linux, starting it from its new place is enough.
 
 ---
 
@@ -256,6 +292,12 @@ Set the environment variable `LABDECK_HOME` to use another folder. Inside LabDec
   from another computer. It is read (never changed) and its profiles are listed; an edited one is
   saved as LabDeck's own copy.
 - `settings.json` holds the last selected profile and the quit question's "Don't ask me again".
+- `labdeck.png` (Linux) is the icon of the app menu entry, and `Logs/labdeck.log` holds what
+  LabDeck printed when it was started from a terminal.
+
+Outside its folder LabDeck only writes its app menu entry (Linux,
+`~/.local/share/applications/labdeck.desktop`) and, when you tick it, its "start when I log in"
+entry (see [Running it](#running-it)).
 
 LabDeck keeps everything in its own folder and never reads Elgato's Stream Deck app or its
 folders, so it works the same whether that app is installed or not. If it is installed, quit it
@@ -276,6 +318,8 @@ path of the `.streamDeckProfile` file.
 | Hotkeys don't type | macOS: allow Accessibility. Linux Wayland: the target app may need to run under XWayland. |
 | A hotkey does nothing in a game (Windows) | LabDeck sends keys by hardware scan code and holds each one at least 50 ms, so games see them. If the status line says the game "runs as administrator", start LabDeck as administrator too (Windows blocks keys from normal programs to those). Games whose anti-cheat ignores keys sent by programs can't be reached by LabDeck or any similar tool. Fullscreen games: keep LabDeck in the tray; it doesn't need the window. |
 | No tray icon on GNOME | Install the AppIndicator extension, or run without `--background` and keep the window open. |
+| LabDeck isn't in the Linux app menu | Start it once (from the terminal or with `sh linux/install.sh`): it adds itself. Some desktops show new entries only after logging out and in again. |
+| Nothing printed when started from a Linux terminal | LabDeck moved to the background; its messages are in `Logs/labdeck.log` in LabDeck's folder. Start it with `--foreground` to see them in the terminal. |
 | No sound from Play Audio or the Timer bell | Linux: make sure ALSA (or PipeWire/PulseAudio's ALSA layer) works; check the sound output. |
 | Website icon not found | The site may block downloads or only offer an SVG icon; drop a PNG on the key instead. |
 | Build error about `libudev` or `alsa` (Linux) | Install the packages in Linux step 1. |
@@ -300,10 +344,12 @@ path of the `.streamDeckProfile` file.
 | `src/profile.rs` | reading and writing profiles in the original's format |
 | `src/favicon.rs` | fetching a website's icon |
 | `src/tray.rs` | the system tray icon and menu |
+| `src/desktop.rs` | fitting into the desktop: window icon, Linux app menu entry, moving a terminal start to the background, no console on Windows, starting at login |
 | `src/plugins.rs` | running plugins: starting them, their WebSocket, Lua, messages |
 | `Plugins.md`, `plugin-examples/` | how to write plugins, and a Counter example in Rust, JavaScript, TypeScript and Lua |
 | `MECHANICS.md`, `mechanics.json` | how the original works (with function addresses) and the values used |
 | `linux/70-streamdeck.rules` | udev rule for Linux device access |
+| `linux/install.sh` | one-step Linux setup: build tools, Rust, build, install, udev rule, start |
 
 `cargo build` makes a debug build; `cargo build --release` makes an optimised one. There are no
 build scripts and no generated files: the Rust sources and `Cargo.toml` are everything.
